@@ -87,11 +87,19 @@
         .card-title {
             font-size: 18px;
             font-weight: 600;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
             color: #202124;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+
+        .card-standard {
+            font-size: 13px;
+            font-weight: 500;
+            color: #1967d2;
+            margin-bottom: 12px;
+            font-style: italic;
         }
 
         .card-description {
@@ -168,7 +176,7 @@
             <input 
                 type="text" 
                 id="searchInput" 
-                placeholder="Search by title, description, or tags..."
+                placeholder="Search by title, description, learning standard, or tags..."
                 autocomplete="off"
             >
         </div>
@@ -182,7 +190,7 @@
 
     <script>
         // CONFIGURATION: Your Google Sheets CSV URL
-        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGtlYA672r4zwBdid1BPYP3ieMeOrx8ABXyY0AWO1_HH0YHiFeO2j4-Hfcuvwg8BNvVvZrx6PrFY4w/pub?output=csv';
+        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQNeKwaVHyet9QnH-px0UcRhEGCHCG34ia3oNz9XdMvU6ojvXC4n1WcER4dgPzaLI7FPdIOa_2-iSIU/pub?output=csv';
 
         let allItems = [];
 
@@ -194,9 +202,8 @@
             const match = url.match(/id=([a-zA-Z0-9_-]+)/);
             if (match && match[1]) {
                 const fileId = match[1];
-                // Use thumbnail API with size parameter - this works for embedding
-                // sz can be: s (small), m (medium), l (large), or w### (width in pixels)
-                return `https://lh3.googleusercontent.com/d/${fileId}=w400`;
+                // Use Drive's thumbnail endpoint - better for embedding
+                return `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`;
             }
             
             return url; // Return original if not a Google Drive link
@@ -217,12 +224,21 @@
                     return v.replace(/^"(.*)"$/, '$1').trim();
                 });
                 
-                // Skip timestamp (values[0]), start from Title (values[1])
+                // COLUMN MAPPING (based on actual Google Sheet order):
+                // Column 0: Timestamp (ignored)
+                // Column 1: Title
+                // Column 2: Description  
+                // Column 3: Tag
+                // Column 4: Picture
+                // Column 5: Learning Standard
+                // Note: New questions added to form will append to end (Column 6+)
+                
                 const item = {
                     title: values[1] || 'Untitled',
                     description: values[2] || '',
                     tags: values[3] ? values[3].split(';').map(t => t.trim()).filter(t => t) : [],
-                    thumbnail: convertGoogleDriveUrl(values[4]) || ''
+                    thumbnail: convertGoogleDriveUrl(values[4]) || '',
+                    learningStandard: values[5] || ''
                 };
                 items.push(item);
             }
@@ -251,6 +267,7 @@
                 ${imageHTML}
                 <div class="card-content">
                     <div class="card-title">${escapeHtml(item.title)}</div>
+                    ${item.learningStandard ? `<div class="card-standard">${escapeHtml(item.learningStandard)}</div>` : ''}
                     <div class="card-description">${escapeHtml(item.description)}</div>
                     <div class="card-tags">${tagsHTML}</div>
                 </div>
@@ -292,6 +309,7 @@
             const filtered = allItems.filter(item => {
                 return item.title.toLowerCase().includes(lowerQuery) ||
                        item.description.toLowerCase().includes(lowerQuery) ||
+                       item.learningStandard.toLowerCase().includes(lowerQuery) ||
                        item.tags.some(tag => tag.toLowerCase().includes(lowerQuery));
             });
 
