@@ -222,7 +222,7 @@
                 const values = lines[i].split(regex).map(v => {
                     // Remove surrounding quotes and trim
                     // Handle both single and double quotes, and nested quotes
-                    return v.replace(/^"+|"+$/g, '').trim();
+                    return v.replace(/^[\"“”]+|[\"“”]+$/g, '').trim();
                 });
                 
                 // COLUMN MAPPING (based on actual Google Sheet order):
